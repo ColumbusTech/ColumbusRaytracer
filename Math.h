@@ -96,6 +96,11 @@ struct vec2_t
 		return vec2_t(X * Scalar, Y * Scalar);
 	}
 
+	friend vec2_t operator*(const Type& Scalar, const vec2_t& Other)
+	{
+		return Other * Scalar;
+	}
+
 	vec2_t operator*(const vec2_t& Other) const
 	{
 		return vec2_t(X * Other.X, Y * Other.Y);
@@ -247,6 +252,11 @@ struct vec3_t
 		return vec3_t(X * Scalar, Y * Scalar, Z * Scalar);
 	}
 
+	friend vec3_t operator*(const Type& Scalar, const vec3_t& Other)
+	{
+		return Other * Scalar;
+	}
+
 	vec3_t operator*(const vec3_t& Other) const
 	{
 		return vec3_t(X * Other.X, Y * Other.Y, Z * Other.Z);
@@ -340,7 +350,7 @@ struct vec3_t
 
 	vec3_t Reflect(const vec3_t& Normal) const
 	{
-		return *this - Normal * this->Dot(Normal) * 2;
+		return *this - this->Dot(Normal) * 2 * Normal;
 	}
 };
 
@@ -484,6 +494,11 @@ struct vec4_t
 	vec4_t operator*(const Type& Scalar) const
 	{
 		return vec4_t(X * Scalar, Y * Scalar, Z * Scalar, W * Scalar);
+	}
+
+	friend vec4_t operator*(const Type& Scalar, const vec4_t& Other)
+	{
+		return Other * Scalar;
 	}
 
 	vec4_t operator*(const vec4_t& Other) const
