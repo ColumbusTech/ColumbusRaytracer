@@ -34,7 +34,7 @@ void Raytracer::RenderLine(ivec2 A, ivec2 B, vec4 Col)
 void Raytracer::RenderScene()
 {
 	Sphere Primitive({0, 0, -5}, {1, 0, 0, 1}, 1);
-	PointLight Light({-2, 2, 0}, {1, 1, 1});
+	PointLight Light({2, 2, 0}, {1, 1, 1});
 
 	int HalfWidth = Width / 2;
 	int HalfHeight = Height / 2;
@@ -46,15 +46,30 @@ void Raytracer::RenderScene()
 	vec3 Normal;
 	vec3 Hitpoint;
 
+	struct
+	{
+		vec3 LT = {-1, 1, -1};
+		vec3 RT = {1, 1, -1};
+		vec3 LB = {-1, -1, -1};
+		vec3 RB = {1, -1, -1};
+
+		vec3 Pos = {0, 0, 0};
+	} C;
+
 	for (int X = 0; X < Width; X++)
 	{
 		for (int Y = 0; Y < Height; Y++)
 		{
-			float RayDirectionX = (float)(X - HalfWidth) * WidthStep * FOVStep;
-			float RayDirectionY = (float)(Y - HalfHeight) * HeightStep * AspectStep;
-			vec3 RayDirection(RayDirectionX, RayDirectionY, -1);
+			float Cx = (X + 0.5f) / Width;
+			float Cy = (Y + 0.5f) / Height;
 
-			Ray R({0}, RayDirection);
+			vec3 Direction = Math::Mix(Math::Mix(C.LB, C.RB, Cx), Math::Mix(C.LT, C.RT, Cx), Cy);
+
+			//float RayDirectionX = (float)(X - HalfWidth) * WidthStep * FOVStep;
+			///float RayDirectionY = (float)(Y - HalfHeight) * HeightStep * AspectStep;
+			//vec3 RayDirection(RayDirectionX, RayDirectionY, -1);
+
+			Ray R(C.Pos, Direction);
 
 			if (Primitive.Intersect(R, Normal, Hitpoint))
 			{

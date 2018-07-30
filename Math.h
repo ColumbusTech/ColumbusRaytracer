@@ -11,6 +11,9 @@ struct vec3_t;
 template <typename Type>
 struct vec4_t;
 
+template <typename Type>
+struct mat4_t;
+
 typedef vec2_t<float> vec2;
 typedef vec2_t<double> dvec2;
 typedef vec2_t<int> ivec2;
@@ -25,6 +28,11 @@ typedef vec4_t<float> vec4;
 typedef vec4_t<double> dvec4;
 typedef vec4_t<int> ivec4;
 typedef vec4_t<bool> bvec4;
+
+typedef mat4_t<float> mat4;
+typedef mat4_t<double> dmat4;
+typedef mat4_t<int> imat4;
+typedef mat4_t<bool> bmat4;
 
 struct Math
 {
@@ -44,6 +52,12 @@ struct Math
 	static constexpr Type Clamp(const Type& MinValue, const Type& MaxValue, const Type& A) noexcept
 	{
 		return Min(Max(A, MinValue), MaxValue);
+	}
+
+	template <typename Type>
+	static Type Mix(const Type& A, const Type& B, const double& Coef)
+	{
+		return A * (1.0 - Coef) + B * Coef; 
 	}
 };
 
@@ -588,6 +602,85 @@ struct vec4_t
 	}
 };
 
+template <typename Type>
+struct mat4_t
+{
+	Type Matrix[4][4];
+
+	mat4_t() {}
+	mat4_t(const Type& Diagonal) : mat4_t(
+		vec4(Diagonal, 0, 0, 0),
+		vec4(0, Diagonal, 0, 0),
+		vec4(0, 0, Diagonal, 0),
+		vec4(0, 0, 0, Diagonal)) {}
+	mat4_t(const mat4_t& Base) { std::copy(&Base.Matrix[0][0], &Base.Matrix[0][0] + (4 * 4), Matrix); }
+	mat4_t(mat4_t&& Base) { Matrix = std::move(Base.Matrix); }
+	mat4_t(const vec4_t<Type>& A, const vec4_t<Type>& B, const vec4_t<Type>& C, const vec4_t<Type>& D)
+	{
+		SetRow(0, A);
+		SetRow(1, B);
+		SetRow(2, C);
+		SetRow(3, D);
+	}
+
+	mat4_t& Clear()
+	{
+		return *this = mat4_t(1);
+	}
+
+	mat4_t& SetIdentity()
+	{
+		return *this = mat4_t(1);
+	}
+
+	void SetRow(size_t Row, const vec4_t<Type>& Value)
+	{
+		Matrix[Row][0] = Value.X;
+		Matrix[Row][1] = Value.Y;
+		Matrix[Row][2] = Value.Z;
+		Matrix[Row][3] = Value.W;
+	}
+
+	vec4_t<Type> operator*(const vec4_t<Type>& Vector) const
+	{
+		vec4_t<Type> Result;
+
+		for (size_t Row = 0; Row < 4; Row++)
+		{
+			Result.X += Matrix[Row][0] * Vector.X;
+			Result.Y += Matrix[Row][1] * Vector.Y;
+			Result.Z += Matrix[Row][2] * Vector.Z;
+			Result.W += Matrix[Row][3] * Vector.W;
+		}
+
+		return Result;
+	}
+
+	mat4_t& LookAt(const vec3_t<Type>& Position, const vec3_t<Type>& Center, const vec3_t<Type>& Up)
+	{
+		vec3_t<Type> const f((Center - Position).Normalized());
+		vec3_t<Type> const s(f.Cross(Up).Normalized());
+		vec3_t<Type> const u(s.Cross(f));
+
+		SetIdentity();
+
+		Matrix[0][0] = s.X;
+		Matrix[1][0] = s.Y;
+		Matrix[2][0] = s.Z;
+		Matrix[0][1] = u.X;
+		Matrix[1][1] = u.Y;
+		Matrix[2][1] = u.Z;
+		Matrix[0][2] = -f.X;
+		Matrix[1][2] = -f.Y;
+		Matrix[2][2] = -f.Z;
+		Matrix[3][0] = -s.Dot(Position);
+		Matrix[3][1] = -u.Dot(Position);
+		Matrix[3][2] = f.Dot(Position);
+
+		return *this;
+	}
+};
+
 struct Ray
 {
 	vec3 Begin;
@@ -626,7 +719,7 @@ struct Sphere
 
 	vec3 LightFunc(PointLight Light, vec3 Normal, vec3 Hitpoint, vec3 Ambient, vec3 Camera)
 	{
-		vec3 LightDir = (-Light.Position + Hitpoint).Normalized();
+		vec3 LightDir = (Hitpoint - Light.Position).Normalized();
 		vec3 ViewDir = (Camera - Hitpoint).Normalized();
 		vec3 ReflectDir = LightDir.Reflect(Normal).Normalized();
 		float DiffuseFactor = Math::Max(0.0f, Normal.Dot(-LightDir));
